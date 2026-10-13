@@ -14,7 +14,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Index JS/TS/Java source file paths and hashes into a local SQLite database.
+    /// Index source syntax, contract candidates and coverage issues into local SQLite.
     Analyze {
         #[arg(long, default_value = ".")]
         source: PathBuf,
@@ -39,6 +39,65 @@ enum Query {
         #[arg(long, default_value_t = 0)]
         offset: u32,
     },
+    /// Find a top-level JS/TS declaration by exact name.
+    Symbols {
+        name: String,
+        #[arg(long)]
+        path: Option<String>,
+        #[arg(long, default_value_t = 25)]
+        limit: u32,
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+    },
+    /// List static imports/re-exports and file-level resolution for an indexed relative path.
+    Imports {
+        path: String,
+        #[arg(long, default_value_t = 25)]
+        limit: u32,
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+    },
+    /// List indexed files importing an exact relative target file (resolved edges only).
+    Dependents {
+        path: String,
+        #[arg(long, default_value_t = 25)]
+        limit: u32,
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+    },
+    /// Query syntax-derived GraphQL fields, Spring mappings or HTTP call candidates.
+    Contracts {
+        #[arg(long, value_parser = ["graphql", "http", "outbound_http_candidate"])]
+        category: String,
+        #[arg(long)]
+        path: Option<String>,
+        #[arg(long)]
+        method: Option<String>,
+        #[arg(long)]
+        route: Option<String>,
+        #[arg(long, default_value_t = 25)]
+        limit: u32,
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+    },
+    /// Show literal HTTP call / Spring route path matches (unverified candidates).
+    ContractIssues {
+        #[arg(long)]
+        path: Option<String>,
+        #[arg(long, default_value_t = 25)]
+        limit: u32,
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+    },
+    /// Show literal HTTP call / Spring route path matches (unverified candidates).
+    HttpLinks {
+        #[arg(long)]
+        route: Option<String>,
+        #[arg(long, default_value_t = 25)]
+        limit: u32,
+        #[arg(long, default_value_t = 0)]
+        offset: u32,
+    },
 }
 
 fn run() -> anyhow::Result<()> {
@@ -50,6 +109,64 @@ fn run() -> anyhow::Result<()> {
             Query::Files { limit, offset } => {
                 serde_json::to_value(molt_index::files(&source, limit, offset)?)?
             }
+            Query::Symbols {
+                name,
+                path,
+                limit,
+                offset,
+            } => serde_json::to_value(molt_index::symbols(
+                &source,
+                &name,
+                path.as_deref(),
+                limit,
+                offset,
+            )?)?,
+            Query::Imports {
+                path,
+                limit,
+                offset,
+            } => serde_json::to_value(molt_index::imports(&source, &path, limit, offset)?)?,
+            Query::Dependents {
+                path,
+                limit,
+                offset,
+            } => serde_json::to_value(molt_index::dependents(&source, &path, limit, offset)?)?,
+            Query::Contracts {
+                category,
+                path,
+                method,
+                route,
+                limit,
+                offset,
+            } => serde_json::to_value(molt_index::contracts(
+                &source,
+                &category,
+                path.as_deref(),
+                method.as_deref(),
+                route.as_deref(),
+                limit,
+                offset,
+            )?)?,
+            Query::ContractIssues {
+                path,
+                limit,
+                offset,
+            } => serde_json::to_value(molt_index::contract_issues(
+                &source,
+                path.as_deref(),
+                limit,
+                offset,
+            )?)?,
+            Query::HttpLinks {
+                route,
+                limit,
+                offset,
+            } => serde_json::to_value(molt_index::http_links(
+                &source,
+                route.as_deref(),
+                limit,
+                offset,
+            )?)?,
         },
     };
     println!("{}", serde_json::to_string(&result)?);
