@@ -21,6 +21,13 @@ MOLT is an agent-native Rust CLI plus an Agent Skill for evidence-based moderniz
 - Use language/framework-level syntax and documented, reusable adapters (e.g. GraphQL SDL or Spring annotations), not observations about one fixture, to recognize candidate contracts. If an inference depends on a convention or cannot be confirmed statically, mark it as a candidate/unknown. Unsupported ecosystems are reported honestly, not generalized from a single sample.
 - Tests should use independent synthetic examples to prove the same feature works across different names and directory layouts. Keep actual subject-specific observations and evidence in `docs/test-subjects.md` or separate migration plans, never as conditions in the CLI/indexer. Before adding any extraction rule, ask whether it would work unchanged for an unrelated repository.
 
+## Milestone commits
+
+- When a coherent, reviewable stage is complete, make a **local commit automatically** without waiting for a separate commit request. A stage needs a clear scope, appropriate tests/checks, and an honest account of remaining unknowns; do not commit half-finished work just to create a checkpoint.
+- Before committing, inspect the working tree and staged diff. Stage **only files changed for that stage** by explicit path; never use blanket staging or include unrelated/user changes, `test_subjects/`, secrets, environment files, generated indexes, or migration output. If stage changes cannot be separated safely from existing work, ask the user instead of committing unrelated changes.
+- Run the applicable checks (including the Rust gates below when Rust changed) and `git diff --cached --check`. If checks fail, report the exact failure and do not automatically commit incomplete work; ask before making an explicitly labeled checkpoint commit.
+- Write a commit message describing the actual scope, not claiming behavior parity or deployment from syntax inventory. Report the commit hash and verification status. A local commit is **not** authorization to push, tag, merge, deploy, migrate data, or bypass any approval gate above.
+
 ## When modifying Rust
 
 - Follow the Rust Skill above. Choose target Rust structure, type safety, explicit failure handling, tests and documentation based on actual requirements and established Rust patterns; do not cut these corners to make the target smaller. Work with the workspace's declared edition/toolchain; do not silently change either.
